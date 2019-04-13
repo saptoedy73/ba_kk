@@ -1,0 +1,112 @@
+**********************************************************************************
+*... FTPGet.PRG ...*
+
+PARAMETERS lcHost, lcUser, lcPwd, lcRemoteFile, lcNewFile, lnXFerType     
+
+*.................................................................................
+*:   Usage: DO ftpget WITH ;
+*:         'ftp.host', 'name', 'password', 'source.file', 'target.file'[, 1 | 2]
+*:
+*:  Where:  lcHost       = Host computer IP address or name
+*:          lcUser       = user name - anonymous may be used
+*:          lcPwd        = password
+*:          lcRemoteFile = source file name
+*:          lcNewFile    = target file name
+*:          lnXFerType   = 1 (default) for ascii, 2 for binary
+*.................................................................................
+
+*...set up API calls
+DECLARE INTEGER InternetOpen IN wininet;
+   STRING sAgent, INTEGER lAccessType, STRING sProxyName,;
+   STRING sProxyBypass, STRING  lFlags
+
+DECLARE INTEGER InternetCloseHandle IN wininet INTEGER hInet
+
+DECLARE INTEGER InternetConnect IN wininet.DLL;
+   INTEGER hInternetSession,;
+   STRING  lcHost,;
+   INTEGER nServerPort,;
+   STRING  lcUser,;
+   STRING  lcPassword,;
+   INTEGER lService,;
+   INTEGER lFlags,;
+   INTEGER lContext
+
+DECLARE INTEGER FtpGetFile IN wininet;
+   INTEGER hftpSession, ;
+   STRING  lcRemoteFile,;
+   STRING  lcNewFile, ;
+   INTEGER fFailIfExists,;
+   INTEGER dwFlagsAndAttributes,;
+   INTEGER dwFlags, ;
+   INTEGER dwContext
+
+lcHost       = ALLTRIM(lcHost) 
+lcUser       = ALLTRIM(lcUser)
+lcPwd        = ALLTRIM(lcPwd)
+lcRemoteFile = ALLTRIM(lcRemoteFile)
+lcNewFile    = ALLTRIM(lcNewFile)
+
+sAgent = "vfp"
+
+sProxyName = CHR(0)     &&... no proxy
+sProxyBypass = CHR(0)   &&... nothing to bypass
+lFlags = 0              &&... no flags used
+
+*... initialize access to Inet functions
+hOpen = InternetOpen (sAgent, 1,;
+   sProxyName, sProxyBypass, lFlags)
+
+IF hOpen = 0
+   WAIT WINDOW  "Unable to get access to WinInet.Dll" TIMEOUT 2
+   RETURN
+ENDIF
+
+*... The first '0' says use the default port, usually 21.
+hftpSession = InternetConnect (hOpen, lcHost,;
+   0, lcUser, lcPwd, 1, 0, 0)   &&... 1 = ftp protocol
+
+IF hftpSession = 0
+   *... close access to Inet functions and exit
+   = InternetCloseHandle (hOpen)
+   WAIT WINDOW "Unable to connect to " + lcHost + '.' TIMEOUT 2
+   RETURN
+ELSE
+   WAIT WINDOW "Connected to " + lcHost + " as: [" + lcUser + "]"  TIMEOUT 1
+ENDIF
+
+*... 0 to automatically overwrite file
+*... 1 to fail if file already exists
+fFailIfExists  = 0  
+dwContext      = 0  &&... used for callback
+
+WAIT WINDOW 'Transferring ' + lcRemoteFile + ' to ' + lcNewFile + '...' NOWAIT 
+lnResult = FtpGetFile (hftpSession, lcRemoteFile, lcNewFile,;
+   fFailIfExists, 128, lnXFerType,;
+   dwContext)
+
+*... 128 = #define FILE_ATTRIBUTE_NORMAL     0x00000080 
+*... See CreateFile for other attributes
+
+* close handles
+= InternetCloseHandle (hftpSession)
+= InternetCloseHandle (hOpen)
+
+IF lnResult = 1
+   *... successful download, do what you want here
+   WAIT WINDOW 'Completed.' TIMEOUT 1
+   MODI FILE (lcNewFile)
+ELSE
+   WAIT WINDOW  "Unable to download selected file" TIMEOUT 2
+ENDIF
+
+RETURN
+*** End of ftpGet.PRG *************************************************************
+
+
+
+
+
+Now if you want to delete the remote file after downloading it,
+you can use FtpDelete.PRG:
+
