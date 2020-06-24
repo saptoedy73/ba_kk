@@ -371,20 +371,9 @@ ENDIF
 RETURN rtval
 
 FUNCTION Rf_DoConnect()
-DO CASE 
-CASE fv_kantor='SH'
-  	fc_kon = "driver=mysql odbc 5.1 driver;server=103.27.207.34;uid=root;pwd=bumiagung;database=glsh"
-  	fv_tipe='2'
-  	fv_ip='103.27.207.34'
-CASE fv_kantor='BA'
-  	fc_kon = "driver=mysql odbc 5.1 driver;server=103.27.207.34;uid=root;pwd=bumiagung;database=glba"
-  	fv_tipe='2'
-  	fv_ip='103.27.207.34'
-OTHERWISE 
-  	fc_kon = "driver=mysql odbc 5.1 driver;server=localhost;uid=root;pwd=CARDO;database=glba"
+ 	fc_kon = "driver=mysql odbc 5.1 driver;server=localhost;uid=root;pwd=CARDO;database=glba"
   	fv_ip='Localhost'
   	fv_tipe='3'
-ENDCASE 
 fv_kon=SQLSTRINGCONNECT("&fc_kon")
 ENDFUNC 
 
